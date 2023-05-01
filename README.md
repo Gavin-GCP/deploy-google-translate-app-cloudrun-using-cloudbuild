@@ -1,78 +1,333 @@
-| :boom: ALERT!!             |
-|:---------------------------|
-| This repo will soon be relocating to [GoogleCloudPlatform](https://github.com/GoogleCloudPlatform) as we better organize these code samples! Stay tuned as more info is coming soon. |
+# Nebulous serverless Cloud Translation API app
+
+## Python (2 and 3) version
+
+While the majority of this app's deployments are in Python 3, there are still users upgrading from Python 2, so our Python 2 code is meant to help with migration &amp; planning. Admittedly, there may _seem_ to be a bit of "cheating" due to the duplicity of Python 2 and 3, especially since the application is compatible across both language versions without modification or use of compatibility libraries. However there are significant differences between Python 2 and 3 deployment requirements irregardless of language differences. Additional notes:
+
+- For local or Cloud Run deployments, there are little/no updates to go from Python 2 to 3.
+- Neither Cloud Functions nor Cloud Run with Cloud Buildpacks support Python 2.
+- There is also an [equivalent Node.js version](../nodejs) of this app.
 
 
-# Nebulous Google Cloud serverless &amp; API sample applications
-### Run the same apps locally, on App Engine, Cloud Functions, or Cloud Run
+## Codelab links
 
-## Description
-
-This is the repo for a set of sample apps and corresponding codelabs (self-paced, hands-on tutorials) demonstrating how to call Google APIs from [Google Cloud serverless compute platforms](https://cloud.google.com/serverless) (App Engine, Cloud Functions, Cloud Run). More on each platform below. Working wth [Cloud APIs](cloud) differs from [non-Cloud Google APIs](noncloud), so that is how the samples are organized. The common aspect of all of sample apps is that they can be run locally or deployed to any of the 3 platforms without code changes (all done in configuration).
-
-
-## Hosting options
-
-- **[App Engine](https://cloud.google.com/appengine)** (standard environment) — source-based application deployments (app-hosting in the cloud; "PaaS")
-    - _App Engine_ is for users who wish to deploy a traditional (but not containerized) web stack (LAMP, MEAN, etc.) application direct from source code.
-- **[Cloud Functions](https://cloud.google.com/functions)** — cloud-hosted functions or microservices ("FaaS"), possibly event-driven
-    - If your app is relatively simple, is a single function, or perhaps some event-driven microservice, _Cloud Functions_ may be the right platform for you.
-- **[Cloud Run](https://cloud.run)** — fully-managed serverless container-hosting in the cloud ("CaaS") service
-    - If your apps are containerized or you have containerization as part of your software development workflow, use _Cloud Run_. Containers free developers from any language, library, or binary restrictions with App Engine or Cloud Functions.
-
-A "fourth" product, [App Engine flexible environment](https://cloud.google.com/appengine/docs/flexible), which sits somewhere between App Engine standard environment and Cloud Run, is out-of-scope for these sample apps at this time.
-
-When running on App Engine or Cloud Functions, the Python runtime supplies a default web server (`gunicorn`), but for Node.js, [Express.js](http://expressjs.com) was selected. No default servers are available at all for Cloud Run, so Python developers can either run the [Flask](https://flask.palletsprojects.com) development server (default) or self-bundle `gunicorn` (per your configuration). All Node.js deployments specify Express.js.
+Deployment | Python 2 | Python 3
+--- | --- | ---
+Local/hosted Flask|[codelab](https://codelabs.developers.google.com/codelabs/cloud-nebulous-serverless-python-flask?utm_source=codelabs&utm_medium=et&utm_campaign=CDR_wes_aap-serverless_nebservflask_sms_201020&utm_content=-)|_same as Python 2_
+App Engine|[codelab](https://codelabs.developers.google.com/codelabs/cloud-nebulous-serverless-python-gae2?utm_source=codelabs&utm_medium=et&utm_campaign=CDR_wes_aap-serverless_nebservgae2_sms_201020&utm_content=-)|[codelab](https://codelabs.developers.google.com/codelabs/cloud-nebulous-serverless-python-gae3?utm_source=codelabs&utm_medium=et&utm_campaign=CDR_wes_aap-serverless_nebservgae3_sms_201020&utm_content=-)
+Cloud Functions| _N/A_ |[codelab](https://codelabs.developers.google.com/codelabs/cloud-nebulous-serverless-python-gcf?utm_source=codelabs&utm_medium=et&utm_campaign=CDR_wes_aap-serverless_nebservgcf_sms_201020&utm_content=-)
+Cloud Run (Docker)|[codelab](https://codelabs.developers.google.com/codelabs/cloud-nebulous-serverless-python-gcr2?utm_source=codelabs&utm_medium=et&utm_campaign=CDR_wes_aap-serverless_nebservgcr2_sms_201020&utm_content=-)|[codelab](https://codelabs.developers.google.com/codelabs/cloud-nebulous-serverless-python-gcr3?utm_source=codelabs&utm_medium=et&utm_campaign=CDR_wes_aap-serverless_nebservgcr3_sms_201020&utm_content=-)
+Cloud Run (Buildpacks)| _N/A_ |[codelab](https://codelabs.developers.google.com/codelabs/cloud-nebulous-serverless-python-gcrbp?utm_source=codelabs&utm_medium=et&utm_campaign=CDR_wes_aap-serverless_nebservgcrbp_sms_201020&utm_content=-)
 
 
-## Inspiration and implementation
+## Deployments and their files
 
-These samples were inspired by a [user's suboptimal experience](https://www.mail-archive.com/google-appengine@googlegroups.com/msg94549.html) trying to create a simple App Engine app using a Cloud API. This was followed-up with the realization that there aren't enough examples showing users how to access non-Cloud Google APIs from serverless, hence *those* samples.
+These are the files provided in this repo and the deployments they're applicable to:
 
-The table below outlines the development languages, supported versions, deployments tested, and selected web frameworks (whose bundled development servers are used for running locally):
+![repository files](https://user-images.githubusercontent.com/1102504/119735453-2f3af500-be31-11eb-9115-3fdeb22ec31c.png)
 
-Language | Versions | Deployment | Framework
---- | --- | --- | ---
-Python|2.7|local, cloud|Flask
-Python|3.6+|local, cloud|Flask
-Node.js|10, 17|local|Express.js
-Node.js|10, 12, 14, 16|cloud|Express.js
+> NOTES:
+>- * &mdash; `requirements.txt` is used for local and App Engine (2.x) package installations and not required in deployments themselves unlike all others
+>- `main.py` and `templates/index.html` comprise the entire application and are always required
+>- `noxfile.py` and `test_translate.py` are for testing only; see [Testing section](#testing) below
+>- All `.*ignore` and `.git*` files/folders are administrative and not listed in table above or deployments below
+>- Files applicable only to a specific language version are annotated above
 
+Below are the required settings and instructions for all documented deployments. The "**TL:DR;**" section at the top of each configuration summarizes the key files (see above) while the table beneath spells out the details. No administrative files are listed.
 
-## Cost
-
-While many Google APIs can be used without fees, use of GCP products &amp; APIs is _not_ free. Certain products do offer an ["Always Free" tier](https://cloud.google.com/free/docs/gcp-free-tier#free-tier-usage-limits) which you have to exceed in order to be billed. Reference any relevant pricing information linked below before doing so.
-
-- [App Engine](https://cloud.google.com/appengine/pricing)
-- [Cloud Functions](https://cloud.google.com/functions/pricing)
-- [Cloud Run](https://cloud.google.com/run/pricing)
-- [GCP general pricing](https://cloud.google.com/pricing)
-- [GCP pricing calculator](https://cloud.google.com/products/calculator)
-
-When enabling services, you may be asked for an active billing account which requires a financial instrument such as a credit card. Reference relevant pricing information before doing so. While Cloud Functions and Cloud Run share a similar Always Free tier and pricing model, App Engine is slightly different.
-
-Furthermore, deploying to GCP serverless platforms incur [minor build and storage costs](https://cloud.google.com/appengine/pricing#pricing-for-related-google-cloud-products). [Cloud Build](https://cloud.google.com/build/pricing) has its own free quota as does [Cloud Storage](https://cloud.google.com/storage/pricing#cloud-storage-always-free). For greater transparency, Cloud Build builds your application image which is then sent to the [Cloud Container Registry](https://cloud.google.com/container-registry/pricing), or [Artifact Registry](https://cloud.google.com/artifact-registry/pricing), its successor; storage of that image uses up some of that (Cloud Storage) quota as does network egress when transferring that image to the service you're deploying to. However you may live in region that does not have such a free tier, so be aware of your storage usage to minimize potential costs. (You may look at what storage you're using and how much, including deleting build artifacts via [your Cloud Storage browser](https://console.cloud.google.com/storage/browser).)
-
-More specific cost information for each sample is available in their respective README files.
+> NOTE: Serverless deployments (as configured here) use [default service accounts](https://cloud.google.com/iam/docs/service-accounts#default) which provide a broad set of permissions to assist you in getting a working prototype. When preparing to launch to production, the Google Cloud team recommends the best practice of "least privileges," and instead use [user-managed service accounts](https://cloud.google.com/iam/docs/service-accounts#user-managed) with the minimal set of permissions allowing your app to function properly.
 
 
-### Academic use
+## **Local Flask server (Python 2)**
 
-#### Teaching and research grants
+**TL;DR:** application files (`main.py` &amp; `requirements.txt`)
 
-If you are a faculty member or lecturer at a regionally-accredited, degree-granting, and not-for-profit higher ed institution in one of [75+ supported countries worldwide](https://support.google.com/google-cloud-higher-ed/answer/10723190) teaching a course where students are expected to code or use resources in the cloud, you may be eligible to grant your students (plus yourself and teaching assistants) free usage of Google Cloud. Explore faculty resources at <http://cloud.google.com/edu> to learn more about our _education (teaching and [initial] research) grants_. **@Students:** send your instructors there so they can get you access to Google Cloud.
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|_unused_ (delete or leave as-is)
+`appengine_config.py`|_unused_ (delete or leave as-is; only for Python 2 App Engine)
+`requirements.txt`|**use as-is** to install packages locally (see below) but _unused_ thereafter
+`lib`|_unused_ (delete or leave as-is if it exists)
+`Dockerfile`|_unused_ (delete or leave as-is)
+`Procfile`|_unused_ (delete or leave as-is)
+
+Instructions:
+
+1. **Run** `pip install -U pip -r requirements.txt` to install/update packages locally (or `pip2`)
+1. **Run** `gcloud auth application-default login` to set your credentials
+1. **Run** `python main.py` to run on local Flask server (or `python2`)
 
 
-#### Cloud computing curriculum
+## **Local Flask server (Python 3)**
 
-If you are an educator who wishes to add cloud computing to your curriculum or seek to enhance it with Google Cloud teaching materials, take a look at our [free 10-module, 40-hour complete course](https://cloud.google.com/edu/curriculum).
+**TL;DR:** app files (identical to Python 2 deployment)
+
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|_unused_ (delete or leave as-is)
+`appengine_config.py`|_unused_ (delete or leave as-is; only for Python 2 App Engine)
+`requirements.txt`|**use as-is** to install packages locally (see below) but _unused_ thereafter
+`lib`|_unused_ (delete or leave as-is if it exists)
+`Dockerfile`|_unused_ (delete or leave as-is)
+`Procfile`|_unused_ (delete or leave as-is)
+
+Instructions:
+
+1. **Run** `pip install -U pip -r requirements.txt` to install/update packages locally (or `pip3`)
+1. **Run** `gcloud auth application-default login` to set your credentials
+1. **Run** `python main.py` to run on local Flask server (or `python3`)
 
 
-#### Hands-on training for self-paced online tutorials
+## **App Engine (Python 2)**
 
-For a hands-on learning experience on all aspects of Google Cloud, both students and faculty can get their hands on free _training credits_ for [Cloud Skills Boost hands-on labs powered by QwikLabs](https://cloudskillsboost.google). Apply for those credits at <http://cloud.google.com/edu> as well.
+**TL;DR:** app files plus `app.yaml`, `appengine_config.py`, and `lib`
+
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|**use as-is** from repo (ensure `#runtime:python310` commented out)
+`appengine_config.py`|**use as-is** from repo
+`requirements.txt`|**use as-is** to install packages locally (see below) but _unused_ thereafter
+`lib`|**create folder** per instructions below
+`Dockerfile`|_unused_ (delete or leave as-is)
+`Procfile`|_unused_ (delete or leave as-is)
+
+Instructions:
+
+1. **Run** `pip install -t lib -r requirements.txt` to populate `lib` folder (or `pip2`)
+1. **Run** `gcloud app deploy` to deploy to Python 2 App Engine
+    - You'll be prompted for the REGION if deploying to App Engine the first time.
+    - App Engine apps are tied to one region, so it can't be changed once it's set, meaning you won't be prompted thereafter.
+
+
+## **App Engine (Python 3)**
+
+**TL;DR:** app files plus `app.yaml`
+
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|**uncomment** `runtime:python310` (or Python 3.7-3.9); **delete** all other lines
+`appengine_config.py`|_unused_ (delete or leave as-is; only for Python 2 App Engine)
+`requirements.txt`|**use as-is** from repo
+`lib`|**delete** (or rename) this folder if it exists (not used with Python 3 App Engine)
+`Dockerfile`|_unused_ (delete or leave as-is)
+`Procfile`|_unused_ (delete or leave as-is)
+
+Instructions:
+
+1. **Edit** `app.yaml` (see above)
+1. (optional) **Delete** `app.yaml`, `lib` and `appengine_config.py` (unused)
+1. **Run** `gcloud app deploy` to deploy to Python 3 App Engine
+    - You'll be prompted for the REGION if deploying to App Engine the first time.
+    - App Engine apps are tied to one region, so it can't be changed once it's set, meaning you won't be prompted thereafter.
+
+
+## **Cloud Functions (Python 3)**
+
+**TL;DR:** app files
+
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|_unused_ (delete or leave as-is; only for App Engine)
+`appengine_config.py`|_unused_ (delete or leave as-is; only for Python 2 App Engine)
+`requirements.txt`|**use as-is** from repo
+`lib`|**delete** (or rename) this folder if it exists (not used with Cloud Functions)
+`Dockerfile`|_unused_ (delete or leave as-is)
+`Procfile`|_unused_ (delete or leave as-is)
+
+Instructions:
+
+1. (optional) **Delete** `app.yaml`, `lib` and `appengine_config.py` (unused)
+1. **Run** `gcloud functions deploy translate --runtime python310 --trigger-http --allow-unauthenticated` to deploy to Cloud Functions (or Python 3.7-3.9)
+    - That command creates &amp; deploys a new HTTP-triggered Cloud Function (name must match what's in `main.py`)
+    - You'll be prompted for the REGION if deploying a Cloud Function the first time.
+    - Cloud Functions can be deployed to different regions within a project, but once the region has been set for a function, it cannot be changed.
+1. There is no support for Python 2 with Cloud Functions
+
+
+## **Cloud Run (Python 2 via Docker)**
+
+**TL;DR:** app files plus `Dockerfile`
+
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|_unused_ (delete or leave as-is; only for App Engine)
+`appengine_config.py`|_unused_ (delete or leave as-is; only for Python 2 App Engine)
+`requirements.txt`|`grpcio<1.40.0` applies to this deployment
+`lib`|**delete** (or rename) this folder if it exists (not used with Cloud Run)
+`Dockerfile`|**use as-is** from repo (ensure `#FROM python:3-slim` commented out)
+`Procfile`|_unused_ (delete or leave as-is)
+
+Instructions:
+
+1. (optional) **Delete** `app.yaml`, `lib` and `appengine_config.py` (unused)
+1. **Run** `gcloud run deploy translate --allow-unauthenticated --platform managed` to deploy to Cloud Run
+    - The above command wraps `docker build` and `docker push`, deploying the image to [Cloud Artifact Registry](https://cloud.google.com/artifact-registry) (must be enabled), and finally `docker run` to deploy the service, all in one convenient command.
+    - You'll be prompted to provide a REGION unless you also add `--region REGION` on the cmd-line
+    - You'll be prompted to provide a SOURCE folder unless you also add `--source FOLDER`, e.g., `--source .` on the cmd-line
+    - Supplying both `--region` and `--source` options provide a fully non-interactive deploy (unless you don't have a repository, in which case you'll be prompted to create one)
+1. You can also use this shortcut to deploy to Cloud Run:
+    [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
+1. By default, App Engine &amp; Cloud Functions launch production servers; with Cloud Run, the Flask development server is used for prototyping. For production, bundle and deploy a production server like `gunicorn`:
+    1. **Uncomment** `gunicorn` from `requirements.txt` (commented out for App Engine &amp; Cloud Functions)
+    1. **Uncomment** the `ENTRYPOINT` entry for `gunicorn` replacing the default entry in `Dockerfile`
+    1. Re-use the same deploy command
+
+
+## **Cloud Run (Python 3 via Docker)**
+
+**TL;DR:** app files plus `Dockerfile` (nearly identical to Python 2 deployment)
+
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|_unused_ (delete or leave as-is; only for App Engine)
+`appengine_config.py`|_unused_ (delete or leave as-is; only for Python 2 App Engine)
+`requirements.txt`|**use as-is** from repo
+`lib`|**delete** (or rename) this folder if it exists (not used with Cloud Run)
+`Dockerfile`|**replace** `FROM python:2-slim` with `FROM python:3-slim` (commented out) but **keep all other lines**
+`Procfile`|_unused_ (delete or leave as-is)
+
+Instructions:
+
+1. (optional) **Delete** `app.yaml`, `lib` and `appengine_config.py` (unused)
+1. **Edit** `Dockerfile` (see above)
+1. **Run** `gcloud run deploy translate --allow-unauthenticated --platform managed` to deploy to Cloud Run
+    - The above command wraps `docker build` and `docker push`, deploying the image to [Cloud Artifact Registry](https://cloud.google.com/artifact-registry) (must be enabled), and finally `docker run` to deploy the service, all in one convenient command.
+    - You'll be prompted to provide a REGION unless you also add `--region REGION` on the cmd-line
+    - You'll be prompted to provide a SOURCE folder unless you also add `--source FOLDER`, e.g., `--source .` on the cmd-line
+    - Supplying both `--region` and `--source` options provide a fully non-interactive deploy (unless you don't have a repository, in which case you'll be prompted to create one)
+1. The shortcut "button" above can be customized for Python 3 if you make the `Dockerfile` update above and commit it to your fork/clone.
+1. By default, App Engine &amp; Cloud Functions launch production servers; with Cloud Run, the Flask development server is used for prototyping. For production, bundle and deploy a production server like `gunicorn`:
+    1. **Uncomment** `gunicorn` from `requirements.txt` (commented out for App Engine &amp; Cloud Functions)
+    1. **Uncomment** the `ENTRYPOINT` entry for `gunicorn` replacing the default entry in `Dockerfile`
+    1. Re-use the same deploy command
+
+
+## **Cloud Run (Python 3 via Cloud Buildpacks)**
+
+**TL;DR:** app files plus [`Procfile`](https://devcenter.heroku.com/articles/procfile)
+
+File | Description
+--- | ---
+`main.py`|**use as-is** from repo
+`app.yaml`|_unused_ (delete or leave as-is; only for App Engine)
+`appengine_config.py`|_unused_ (delete or leave as-is; only for Python 2 App Engine)
+`requirements.txt`|**use as-is** from repo
+`lib`|**delete** (or rename) this folder if it exists (not used with Cloud Run)
+`Dockerfile`|**delete** (or rename) this file (_required_)
+`Procfile`|**use as-is** from repo
+
+Instructions:
+
+1. (optional) **Delete** `app.yaml`, `lib` and `appengine_config.py` (unused)
+1. **Delete** `Dockerfile` (or rename it)
+    - There is no support for Python 2 with Cloud Buildpacks (2.x developers must use Docker)
+1. **Run** `gcloud run deploy translate --allow-unauthenticated --platform managed` to deploy to Cloud Run
+    - The above command wraps `docker build` and `docker push`, deploying the image to [Cloud Artifact Registry](https://cloud.google.com/artifact-registry) (must be enabled), and finally `docker run` to deploy the service, all in one convenient command.
+    - You'll be prompted to provide a REGION unless you also add `--region REGION` on the cmd-line
+    - You'll be prompted to provide a SOURCE folder unless you also add `--source FOLDER`, e.g., `--source .` on the cmd-line
+    - Supplying both `--region` and `--source` options provide a fully non-interactive deploy (unless you don't have a repository, in which case you'll be prompted to create one)
+1. By default, App Engine &amp; Cloud Functions launch production servers; with Cloud Run, the Flask development server is used for prototyping. For production, bundle and deploy a production server like `gunicorn`:
+    1. **Uncomment** `gunicorn` from `requirements.txt` (commented out for App Engine &amp; Cloud Functions)
+    1. **Uncomment** the `web:` entry for `gunicorn` replacing the default entry in `Procfile`
+    1. Re-use the same deploy command
+
+
+## References
+
+These are relevant links only to the app in this folder (for all others, see the [README one level up](../README.md):
+
+- [Python 3 App Engine quickstart](https://cloud.google.com/appengine/docs/standard/python3/quickstart)
+- [Python 3 App Engine (standard environment) runtime](https://cloud.google.com/appengine/docs/standard/python3/runtime)
+- [Python 2 App Engine (standard environment) runtime](https://cloud.google.com/appengine/docs/standard/python/runtime)
+- [Python Cloud Functions quickstart](https://cloud.google.com/functions/docs/quickstart-python)
+- [Python Cloud Run quickstart](https://cloud.google.com/run/docs/quickstarts/build-and-deploy/python)
+- [Differences between Python 2 &amp; 3 App Engine (standard environment) runtimes](https://cloud.google.com/appengine/docs/standard/runtimes)
+- [Python 2 to 3 App Engine (standard environment) migration guide](http://cloud.google.com/appengine/docs/standard/python/migrate-to-python3)
+- [App Engine (standard environment) to Cloud Run codelab tutorial](http://g.co/codelabs/pae-migrate-rundocker) (Docker)
+- [App Engine (standard environment) to Cloud Run codelab tutorial](http://g.co/codelabs/pae-migrate-runbldpks) (Cloud Buildpacks)
+- [Flask](https://flask.palletsprojects.com)
 
 
 ## Testing
 
-Each app has its own testing battery; refer to each sample's folder to learn about implemented tests.
+Testing is driven by [`nox`](http://nox.thea.codes) which uses [`pytest`](https://pytest.org) for testing and [`flake8`](https://flake8.pycqa.org) for linting, installing both in virtual environments along with application dependencies, `flask` and `google-cloud-translate`, and finally, `blinker`, a signaling framework integrated into Flask. To run the lint and unit tests (testing `GET` and `POST` requests), install `nox` (with the expected `pip install -U nox`) and run it from the command line in the application folder and ensuring `noxfile.py` is present.
+
+### Expected output
+
+```
+$ nox
+nox > Running session tests-2.7
+nox > Creating virtual environment (virtualenv) using python2.7 in .nox/tests-2-7
+nox > python -m pip install pytest blinker flask google-cloud-translate
+nox > pytest
+============================================ test session starts =============================================
+platform darwin -- Python 2.7.16, pytest-4.6.11, py-1.10.0, pluggy-0.13.1
+rootdir: /private/tmp/cloud-nebulous-serverless-python
+collected 2 items
+
+test_translate.py ..                                                                                   [100%]
+
+============================================== warnings summary ==============================================
+.nox/tests-2-7/lib/python2.7/site-packages/google/cloud/translate_v3/__init__.py:32
+  /private/tmp/cloud-nebulous-serverless-python/.nox/tests-2-7/lib/python2.7/site-packages/google/cloud/translate_v3/__init__.py:32: DeprecationWarning: A future version of this library will drop support for Python 2.7. More details about Python 2 support for Google Cloud Client Libraries can be found at https://cloud.google.com/python/docs/python2-sunset/
+    warnings.warn(message, DeprecationWarning)
+
+-- Docs: https://docs.pytest.org/en/latest/warnings.html
+==================================== 2 passed, 1 warnings in 1.02 seconds ====================================
+nox > Session tests-2.7 was successful.
+nox > Running session tests-3.6
+nox > Creating virtual environment (virtualenv) using python3.6 in .nox/tests-3-6
+nox > python -m pip install pytest blinker flask google-cloud-translate
+nox > pytest
+============================================ test session starts =============================================
+platform darwin -- Python 3.6.8, pytest-6.2.4, py-1.10.0, pluggy-0.13.1
+rootdir: /private/tmp/cloud-nebulous-serverless-python
+collected 2 items
+
+test_translate.py ..                                                                                   [100%]
+
+============================================= 2 passed in 1.22s ==============================================
+nox > Session tests-3.6 was successful.
+nox > Running session tests-3.9
+nox > Creating virtual environment (virtualenv) using python3.9 in .nox/tests-3-9
+nox > python -m pip install pytest blinker flask google-cloud-translate
+nox > pytest
+============================================ test session starts =============================================
+platform darwin -- Python 3.9.1, pytest-6.2.4, py-1.10.0, pluggy-0.13.1
+rootdir: /private/tmp/cloud-nebulous-serverless-python
+collected 2 items
+
+test_translate.py ..                                                                                   [100%]
+
+============================================= 2 passed in 1.04s ==============================================
+nox > Session tests-3.9 was successful.
+nox > Running session lint-2.7
+nox > Creating virtual environment (virtualenv) using python2.7 in .nox/lint-2-7
+nox > python -m pip install flake8
+nox > flake8 --show-source --builtin=gettext --max-complexity=20 --exclude=.nox,.cache,env,lib,generated_pb2,*_pb2.py,*_pb2_grpc.py --ignore=E121,E123,E126,E203,E226,E24,E266,E501,E704,W503,W504,I202 --max-line-length=88 .
+nox > Session lint-2.7 was successful.
+nox > Running session lint-3.6
+nox > Creating virtual environment (virtualenv) using python3.6 in .nox/lint-3-6
+nox > python -m pip install flake8
+nox > flake8 --show-source --builtin=gettext --max-complexity=20 --exclude=.nox,.cache,env,lib,generated_pb2,*_pb2.py,*_pb2_grpc.py --ignore=E121,E123,E126,E203,E226,E24,E266,E501,E704,W503,W504,I202 --max-line-length=88 .
+nox > Session lint-3.6 was successful.
+nox > Running session lint-3.9
+nox > Creating virtual environment (virtualenv) using python3.9 in .nox/lint-3-9
+nox > python -m pip install flake8
+nox > flake8 --show-source --builtin=gettext --max-complexity=20 --exclude=.nox,.cache,env,lib,generated_pb2,*_pb2.py,*_pb2_grpc.py --ignore=E121,E123,E126,E203,E226,E24,E266,E501,E704,W503,W504,I202 --max-line-length=88 .
+nox > Session lint-3.9 was successful.
+nox > Ran multiple sessions:
+nox > * tests-2.7: success
+nox > * tests-3.6: success
+nox > * tests-3.9: success
+nox > * lint-2.7: success
+nox > * lint-3.6: success
+nox > * lint-3.9: success
+```
