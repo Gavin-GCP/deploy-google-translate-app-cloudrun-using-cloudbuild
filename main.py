@@ -20,8 +20,7 @@ app = Flask(__name__)
 _, PROJECT_ID = google.auth.default()
 TRANSLATE = translate.TranslationServiceClient()
 PARENT = 'projects/{}'.format(PROJECT_ID)
-SOURCE, TARGET = ('en', 'English'), ('pa', 'Punjabi')
-
+SOURCE, TARGET = ('en', 'English'), ('hi', 'Hindi')
 
 @app.route('/', methods=['GET', 'POST'])
 def translate(gcf_request=None):
